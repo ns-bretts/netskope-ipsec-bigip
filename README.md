@@ -19,7 +19,7 @@ Create a IPsec tunnel configuration per Data Plane (DP). The four examples below
 create net self ipsec_tunnel address 10.245.101.101/24 vlan public_vlan allow-service none
 ```
 
-### 1.2. IPSec Policy - Interface Mode
+### 1.2. IPSec Policies - Interface Mode (Phase 2)
 ```
 create net ipsec ipsec-policy ns_syd1_policy { protocol esp mode interface ike-phase2-encrypt-algorithm aes256 ike-phase2-auth-algorithm sha256 ike-phase2-perfect-forward-secrecy modp2048 ike-phase2-lifetime 6600 }
 create net ipsec ipsec-policy ns_syd2_policy { protocol esp mode interface ike-phase2-encrypt-algorithm aes256 ike-phase2-auth-algorithm sha256 ike-phase2-perfect-forward-secrecy modp2048 ike-phase2-lifetime 6600 }
@@ -27,7 +27,7 @@ create net ipsec ipsec-policy ns_mel1_policy { protocol esp mode interface ike-p
 create net ipsec ipsec-policy ns_mel3_policy { protocol esp mode interface ike-phase2-encrypt-algorithm aes256 ike-phase2-auth-algorithm sha256 ike-phase2-perfect-forward-secrecy modp2048 ike-phase2-lifetime 6600 }
 ```
 
-### 1.3. IPSec Traffic Selector
+### 1.3. IPSec - Traffic Selector
 ```
 create net ipsec traffic-selector ns_syd1_ts { source-address 0.0.0.0/0 destination-address 10.1.1.2/32 ipsec-policy ns_syd1_policy }
 create net ipsec traffic-selector ns_syd2_ts { source-address 0.0.0.0/0 destination-address 10.1.2.2/32 ipsec-policy ns_syd2_policy }
@@ -35,7 +35,7 @@ create net ipsec traffic-selector ns_mel1_ts { source-address 0.0.0.0/0 destinat
 create net ipsec traffic-selector ns_mel3_ts { source-address 0.0.0.0/0 destination-address 10.1.4.2/32 ipsec-policy ns_mel3_policy }
 ````
 
-### 1.4. IPSec Tunnel Profiles
+### 1.4. Tunnel Profiles - IPSec Interface 
 ```
 create net tunnels ipsec ns_syd1_profile { traffic-selector ns_syd1_ts }
 create net tunnels ipsec ns_syd2_profile { traffic-selector ns_syd2_ts }
@@ -56,10 +56,10 @@ create net tunnels tunnel ns_mel3_ipsec { local-address 10.245.101.101 remote-ad
 create net self ns_syd1_self { address 10.1.1.1/30 vlan ns_syd1_ipsec }
 create net self ns_syd2_self { address 10.1.2.1/30 vlan ns_syd2_ipsec }
 create net self ns_mel1_self { address 10.1.3.1/30 vlan ns_mel1_ipsec }
-tcreate net self ns_mel3_self { address 10.1.4.1/30 vlan ns_mel3_ipsec }
+create net self ns_mel3_self { address 10.1.4.1/30 vlan ns_mel3_ipsec }
 ```
 
-### 1.7. IPSec IKE Peer
+### 1.7. IPSec IKE Peer (Phase 1)
 ```
 create net ipsec ike-peer ns_syd1_ike { remote-address 163.116.192.38 version replace-all-with { v2 } phase1-encrypt-algorithm aes256 phase1-hash-algorithm sha256 phase1-perfect-forward-secrecy modp2048 phase1-auth-method pre-shared-key preshared-key <my-psk> lifetime 84600 traffic-selector replace-all-with { ns_syd1_ts } nat-traversal on my-id-value <my-ipaddress> peers-id-value 163.116.192.38 }
 create net ipsec ike-peer ns_syd2_ike { remote-address 163.116.211.38 version replace-all-with { v2 } phase1-encrypt-algorithm aes256 phase1-hash-algorithm sha256 phase1-perfect-forward-secrecy modp2048 phase1-auth-method pre-shared-key preshared-key <my-psk> lifetime 84600 traffic-selector replace-all-with { ns_syd2_ts } nat-traversal on my-id-value <my-ipaddress> peers-id-value 163.116.211.38 }
