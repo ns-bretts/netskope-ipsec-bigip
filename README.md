@@ -15,11 +15,13 @@ BIG-IP:
 Create a IPsec tunnel configuration per Data Plane (DP). The four examples below are for SYD1, SYD2, MEL1 and MEL3.
 
 ### 1.1. Dedicated Self IP for IPSec Tunnel
+- Create a Self IP dedicted for the IPSec Tunnel local-address to be used in step 1.5.
 ```
 create net self ipsec_tunnel address 10.245.101.101/24 vlan public_vlan allow-service none
 ```
 
 ### 1.2. IPSec Policies - Interface Mode (Phase 2)
+- Create the Phase 2 configuration for each DP. The IKE lifetime is 10 minutes less than the 2 hour ReKey.
 ```
 create net ipsec ipsec-policy ns_syd1_policy { protocol esp mode interface ike-phase2-encrypt-algorithm aes256 ike-phase2-auth-algorithm sha256 ike-phase2-perfect-forward-secrecy modp2048 ike-phase2-lifetime 6600 }
 create net ipsec ipsec-policy ns_syd2_policy { protocol esp mode interface ike-phase2-encrypt-algorithm aes256 ike-phase2-auth-algorithm sha256 ike-phase2-perfect-forward-secrecy modp2048 ike-phase2-lifetime 6600 }
@@ -28,6 +30,8 @@ create net ipsec ipsec-policy ns_mel3_policy { protocol esp mode interface ike-p
 ```
 
 ### 1.3. IPSec - Traffic Selector
+- Traffic Selector is used to as a packet filter that defines what traffic should be handled by a IPsec policy.
+- RFC1918 /32 IP addresses are used as the Virtual Server will forward to these IP address as "nodes" in the Pool.
 ```
 create net ipsec traffic-selector ns_syd1_ts { source-address 0.0.0.0/0 destination-address 10.1.1.2/32 ipsec-policy ns_syd1_policy }
 create net ipsec traffic-selector ns_syd2_ts { source-address 0.0.0.0/0 destination-address 10.1.2.2/32 ipsec-policy ns_syd2_policy }
@@ -35,7 +39,8 @@ create net ipsec traffic-selector ns_mel1_ts { source-address 0.0.0.0/0 destinat
 create net ipsec traffic-selector ns_mel3_ts { source-address 0.0.0.0/0 destination-address 10.1.4.2/32 ipsec-policy ns_mel3_policy }
 ````
 
-### 1.4. Tunnel Profiles - IPSec Interface 
+### 1.4. Tunnel Profiles - IPSec Interface
+- Attach the Traffic Selector to the Tunnel Profile
 ```
 create net tunnels ipsec ns_syd1_profile { traffic-selector ns_syd1_ts }
 create net tunnels ipsec ns_syd2_profile { traffic-selector ns_syd2_ts }
@@ -44,6 +49,7 @@ create net tunnels ipsec ns_mel3_profile { traffic-selector ns_mel3_ts }
 ```
 
 ### 1.5. IPSec Tunnel
+- Create the IPSec Tunnel using the Seld IP as the local-address and the DP IP address as the remote-address
 ```
 create net tunnels tunnel ns_syd1_ipsec { local-address 10.245.101.101 remote-address 163.116.192.38 profile ns_syd1_profile description "Netskope NewEdge - SYD1 Tunnel" }
 create net tunnels tunnel ns_syd2_ipsec { local-address 10.245.101.101 remote-address 163.116.211.38 profile ns_syd2_profile description "Netskope NewEdge - SYD2 Tunnel" }
@@ -52,6 +58,8 @@ create net tunnels tunnel ns_mel3_ipsec { local-address 10.245.101.101 remote-ad
 ```
 
 ### 1.6. Self IP per Tunnel - Local to the Tunnel
+- Create Self IP local to the IPSec Tunnel per Tunnel
+- This should be in the same subnet as the destination-address used in step 1.3
 ```
 create net self ns_syd1_self { address 10.1.1.1/30 vlan ns_syd1_ipsec }
 create net self ns_syd2_self { address 10.1.2.1/30 vlan ns_syd2_ipsec }
@@ -60,6 +68,8 @@ create net self ns_mel3_self { address 10.1.4.1/30 vlan ns_mel3_ipsec }
 ```
 
 ### 1.7. IPSec IKE Peer (Phase 1)
+- Create the IKE Peer. Make sure you change <my-psk> and <my-ipaddress>.
+- <my-ipaddress> will be your Internet routable IP. In this setup the VLAN 10.254.101.0/24 is behind a NAT. The NAT IP is used for <my-ipaddress>.
 ```
 create net ipsec ike-peer ns_syd1_ike { remote-address 163.116.192.38 version replace-all-with { v2 } phase1-encrypt-algorithm aes256 phase1-hash-algorithm sha256 phase1-perfect-forward-secrecy modp2048 phase1-auth-method pre-shared-key preshared-key <my-psk> lifetime 84600 traffic-selector replace-all-with { ns_syd1_ts } nat-traversal on my-id-value <my-ipaddress> peers-id-value 163.116.192.38 }
 create net ipsec ike-peer ns_syd2_ike { remote-address 163.116.211.38 version replace-all-with { v2 } phase1-encrypt-algorithm aes256 phase1-hash-algorithm sha256 phase1-perfect-forward-secrecy modp2048 phase1-auth-method pre-shared-key preshared-key <my-psk> lifetime 84600 traffic-selector replace-all-with { ns_syd2_ts } nat-traversal on my-id-value <my-ipaddress> peers-id-value 163.116.211.38 }
@@ -111,7 +121,7 @@ create ltm virtual ns_https_443_vs { destination 0.0.0.0:443 ip-protocol tcp pro
 ```
 ### 3.2. Explicit Proxy over Tunnel (EPoT)
 - The BIG-IP can also be configured to forward Explicit Proxy over Tunnel (EPoT).
-- The Virtual Server configuration is very similar to transparent steering (4.1.), using the same Fast L4 TCP profile and Persistence configuration.
+- The Virtual Server configuration is very similar to transparent steering (31.), using the same Fast L4 TCP profile and Persistence configuration.
 ```
 create ltm virtual ns_epot_80_vs { destination 10.245.201.101:80 ip-protocol tcp profiles replace-all-with { ns_l4_profile } vlans-enabled vlans replace-all-with { private_vlan } translate-port disabled translate-address enabled pool ns_gw_pool persist replace-all-with { ns_source_addr } description "Netskope Explicit Proxy" }
 ```
