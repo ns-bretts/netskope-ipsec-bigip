@@ -59,7 +59,8 @@ create net tunnels ipsec ns_mel3_profile { traffic-selector ns_mel3_ts }
 ```
 
 ### 1.6. IPSec Tunnel
-- Create the IPSec Tunnel using the Seld IP as the local-address and the DP IP address as the remote-address
+- Create the IPSec Tunnel using the Self IP as the local-address and the DP IP address as the remote-address.
+- It is assumed the Self IP 10.245.101.101 is behind a NAT/Firewall GW.
 ```
 create net tunnels tunnel ns_syd1_ipsec { local-address 10.245.101.101 remote-address 163.116.192.38 profile ns_syd1_profile description "Netskope NewEdge - SYD1 Tunnel" }
 create net tunnels tunnel ns_syd2_ipsec { local-address 10.245.101.101 remote-address 163.116.211.38 profile ns_syd2_profile description "Netskope NewEdge - SYD2 Tunnel" }
