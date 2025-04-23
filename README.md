@@ -39,35 +39,7 @@ create net ipsec traffic-selector ns_mel1_ts { source-address 0.0.0.0/0 destinat
 create net ipsec traffic-selector ns_mel3_ts { source-address 0.0.0.0/0 destination-address 10.1.4.2/32 ipsec-policy ns_mel3_policy }
 ````
 
-### 1.4. Tunnel Profiles - IPSec Interface
-- Attach the Traffic Selector to the Tunnel Profile
-```
-create net tunnels ipsec ns_syd1_profile { traffic-selector ns_syd1_ts }
-create net tunnels ipsec ns_syd2_profile { traffic-selector ns_syd2_ts }
-create net tunnels ipsec ns_mel1_profile { traffic-selector ns_mel1_ts }
-create net tunnels ipsec ns_mel3_profile { traffic-selector ns_mel3_ts }
-```
-
-### 1.5. IPSec Tunnel
-- Create the IPSec Tunnel using the Seld IP as the local-address and the DP IP address as the remote-address
-```
-create net tunnels tunnel ns_syd1_ipsec { local-address 10.245.101.101 remote-address 163.116.192.38 profile ns_syd1_profile description "Netskope NewEdge - SYD1 Tunnel" }
-create net tunnels tunnel ns_syd2_ipsec { local-address 10.245.101.101 remote-address 163.116.211.38 profile ns_syd2_profile description "Netskope NewEdge - SYD2 Tunnel" }
-create net tunnels tunnel ns_mel1_ipsec { local-address 10.245.101.101 remote-address 163.116.198.38 profile ns_mel1_profile description "Netskope NewEdge - MEL1 Tunnel" }
-create net tunnels tunnel ns_mel3_ipsec { local-address 10.245.101.101 remote-address 163.116.215.38 profile ns_mel3_profile description "Netskope NewEdge - MEL3 Tunnel" }
-```
-
-### 1.6. Self IP per Tunnel - Local to the Tunnel
-- Create Self IP local to the IPSec Tunnel per Tunnel
-- This should be in the same subnet as the destination-address used in step 1.3
-```
-create net self ns_syd1_self { address 10.1.1.1/30 vlan ns_syd1_ipsec }
-create net self ns_syd2_self { address 10.1.2.1/30 vlan ns_syd2_ipsec }
-create net self ns_mel1_self { address 10.1.3.1/30 vlan ns_mel1_ipsec }
-create net self ns_mel3_self { address 10.1.4.1/30 vlan ns_mel3_ipsec }
-```
-
-### 1.7. IPSec IKE Peer (Phase 1)
+### 1.4. IPSec IKE Peer (Phase 1)
 - Create the IKE Peer. Make sure you change my-psk and my-ipaddress.
 - <my-ipaddress> will be your Internet routable IP. In this setup the VLAN 10.254.101.0/24 is behind a NAT. The NAT IP is used for my-ipaddress.
 ```
@@ -77,8 +49,37 @@ create net ipsec ike-peer ns_mel1_ike { remote-address 163.116.198.38 version re
 create net ipsec ike-peer ns_mel3_ike { remote-address 163.116.215.38 version replace-all-with { v2 } phase1-encrypt-algorithm aes256 phase1-hash-algorithm sha256 phase1-perfect-forward-secrecy modp2048 phase1-auth-method pre-shared-key preshared-key <my-psk> lifetime 84600 traffic-selector replace-all-with { ns_mel3_ts } nat-traversal on my-id-value <my-ipaddress> peers-id-value 163.116.215.38 }
 ```
 
+### 1.5. Tunnel Profiles - IPSec Interface
+- Attach the Traffic Selector to the Tunnel Profile
+```
+create net tunnels ipsec ns_syd1_profile { traffic-selector ns_syd1_ts }
+create net tunnels ipsec ns_syd2_profile { traffic-selector ns_syd2_ts }
+create net tunnels ipsec ns_mel1_profile { traffic-selector ns_mel1_ts }
+create net tunnels ipsec ns_mel3_profile { traffic-selector ns_mel3_ts }
+```
+
+### 1.6. IPSec Tunnel
+- Create the IPSec Tunnel using the Seld IP as the local-address and the DP IP address as the remote-address
+```
+create net tunnels tunnel ns_syd1_ipsec { local-address 10.245.101.101 remote-address 163.116.192.38 profile ns_syd1_profile description "Netskope NewEdge - SYD1 Tunnel" }
+create net tunnels tunnel ns_syd2_ipsec { local-address 10.245.101.101 remote-address 163.116.211.38 profile ns_syd2_profile description "Netskope NewEdge - SYD2 Tunnel" }
+create net tunnels tunnel ns_mel1_ipsec { local-address 10.245.101.101 remote-address 163.116.198.38 profile ns_mel1_profile description "Netskope NewEdge - MEL1 Tunnel" }
+create net tunnels tunnel ns_mel3_ipsec { local-address 10.245.101.101 remote-address 163.116.215.38 profile ns_mel3_profile description "Netskope NewEdge - MEL3 Tunnel" }
+```
+
+
 ## 2. Load Balancing the IPSec Tunnels
-### 2.1. Netskope Gateway Node + Monitoring
+### 2.1. Self IP per Tunnel - Local to the Tunnel
+- Create Self IP local to the IPSec Tunnel per Tunnel
+- This should be in the same subnet as the destination-address used in step 1.3
+```
+create net self ns_syd1_self { address 10.1.1.1/30 vlan ns_syd1_ipsec }
+create net self ns_syd2_self { address 10.1.2.1/30 vlan ns_syd2_ipsec }
+create net self ns_mel1_self { address 10.1.3.1/30 vlan ns_mel1_ipsec }
+create net self ns_mel3_self { address 10.1.4.1/30 vlan ns_mel3_ipsec }
+```
+
+### 2.2. Netskope Gateway Node + Monitoring
 - Create a node using the address of the remote (Netskope end of the tunnel). This node will be used as a gateway pool member within the load balancing configuration.
 ```
 create ltm node ns_syd1_gw { address 10.1.1.2 monitor none }
@@ -86,13 +87,15 @@ create ltm node ns_syd2_gw { address 10.1.2.2 monitor none }
 create ltm node ns_mel1_gw { address 10.1.3.2 monitor none }
 create ltm node ns_mel3_gw { address 10.1.4.2 monitor none }
 ```
-### 2.2. HTTP Monitor
+
+### 2.3. HTTP Monitor
 - Create a HTTP monitor that will send a HTTP Request to a well know site. This HTTP monitor will send the HTTP request over the IPSec Tunnel to NS Proxy, simulating a real Client request. This is just one example of a HTTP monitor.
 - I would recommend using more than one HTTP or HTTPS monitor with an “Availability Requirement” of at lease one monitor. This will prevent the IPSec Tunnel from flapping in the event of a single HTTP/S monitor failure.
 ```
 create ltm monitor http ns_http_monitor { defaults-from http interval 15 timeout 46 destination *.http recv "Microsoft NCSI" send "GET /ncsi.txt HTTP/1.1\r\nHost: www.msftncsi.com\r\nUser-Agent: BIG-IP\r\nConnection: Close\r\n" }
 ```
-### 2.3. Gateway Pool
+
+### 2.4. Gateway Pool
 - Create a Gateway Pool using the nodes from step 2.1 and apply the HTTP monitor.
 - The Gateway pool can be configured for many different scenarios.
 - Below I have included a Failover option OR a Load Balance option using Round-Robin. More advanced Load Balancing options are available depending on the BIG-IP license.
