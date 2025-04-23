@@ -68,8 +68,8 @@ create net self ns_mel3_self { address 10.1.4.1/30 vlan ns_mel3_ipsec }
 ```
 
 ### 1.7. IPSec IKE Peer (Phase 1)
-- Create the IKE Peer. Make sure you change <my-psk> and <my-ipaddress>.
-- <my-ipaddress> will be your Internet routable IP. In this setup the VLAN 10.254.101.0/24 is behind a NAT. The NAT IP is used for <my-ipaddress>.
+- Create the IKE Peer. Make sure you change "<my-psk>" and "<my-ipaddress>".
+- <my-ipaddress> will be your Internet routable IP. In this setup the VLAN 10.254.101.0/24 is behind a NAT. The NAT IP is used for "<my-ipaddress>".
 ```
 create net ipsec ike-peer ns_syd1_ike { remote-address 163.116.192.38 version replace-all-with { v2 } phase1-encrypt-algorithm aes256 phase1-hash-algorithm sha256 phase1-perfect-forward-secrecy modp2048 phase1-auth-method pre-shared-key preshared-key <my-psk> lifetime 84600 traffic-selector replace-all-with { ns_syd1_ts } nat-traversal on my-id-value <my-ipaddress> peers-id-value 163.116.192.38 }
 create net ipsec ike-peer ns_syd2_ike { remote-address 163.116.211.38 version replace-all-with { v2 } phase1-encrypt-algorithm aes256 phase1-hash-algorithm sha256 phase1-perfect-forward-secrecy modp2048 phase1-auth-method pre-shared-key preshared-key <my-psk> lifetime 84600 traffic-selector replace-all-with { ns_syd2_ts } nat-traversal on my-id-value <my-ipaddress> peers-id-value 163.116.211.38 }
